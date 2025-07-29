@@ -1,0 +1,95 @@
+body {
+    height: 100vh;
+    background-image: linear-gradient(rgba(15, 44, 31, 0.65), rgba(15, 44, 31, 0.75)),
+    url("https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80");
+    background-size: cover;
+    background-position: center;
+    font-family: 'Inter', sans-serif;
+}
+
+.cover-container {
+    max-width: 800px;
+    height: 100vh !important;
+}
+
+.brand-title {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: 1.8rem;
+    letter-spacing: -0.5px;
+}
+
+.nav-masthead .nav-link {
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+    background-color: transparent;
+    border-bottom: 0.25rem solid transparent;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    font-family: 'Outfit', sans-serif;
+}
+
+.nav-masthead .nav-link:hover {
+    color: #fff;
+    border-bottom-color: rgba(255, 255, 255, 0.25);
+}
+
+.nav-masthead .active {
+    color: #fff;
+    border-bottom-color: #fff;
+}
+
+.btn-register-home {
+    background-color: rgba(255, 255, 255, 0.15) !important;
+    border-radius: 50px;
+    backdrop-filter: blur(5px);
+    margin-left: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.btn-register-home:hover {
+    background-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.hero-title {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: 4rem;
+    letter-spacing: -1.5px;
+    line-height: 1.1;
+    text-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+@media (max-width: 768px) {
+    .hero-title {
+        font-size: 2.5rem;
+    }
+}
+
+.hero-text {
+    font-size: 1.25rem;
+    font-weight: 300;
+    opacity: 0.9;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.6;
+}
+
+.btn-hero-custom {
+    background-color: #e28743;
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-family: 'Outfit', sans-serif;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 10px 20px rgba(226, 135, 67, 0.3);
+}
+
+.btn-hero-custom:hover {
+    background-color: #c96f2c;
+    color: white;
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 15px 30px rgba(226, 135, 67, 0.4);
+}
