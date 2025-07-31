@@ -1,0 +1,82 @@
+<% layout('layouts/boilerplate')%>
+<div class="row">
+    <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1 col-12">
+        <div class="form-container">
+            <h1 class="text-center mb-4"><i class="fa-solid fa-pen-to-square text-success me-2"></i>Edit Campground</h1>
+            <form action="/campgrounds/<%=campground._id%>?_method=PUT" method="POST" novalidate class="validated-form"
+                enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label class="form-label-custom" for="title">Title</label>
+                    <input class="form-control form-control-custom" type="text" id="title" name="campground[title]"
+                        value="<%=campground.title %>" required>
+                    <div class="valid-feedback">
+                        Looks good!
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label-custom" for="location">Location</label>
+                    <input class="form-control form-control-custom" type="text" id="location" name="campground[location]"
+                        value="<%=campground.location %>" required>
+                    <div class="valid-feedback">
+                        Looks good!
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label-custom" for="price">Campground Price</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0" id="price-label" style="border: 1px solid rgba(26, 67, 50, 0.15); border-radius: 8px 0 0 8px;">$</span>
+                        <input type="number" class="form-control form-control-custom border-start-0" id="price" placeholder="0.00" aria-label="price"
+                            aria-describedby="price-label" name="campground[price]" value="<%=campground.price %>"
+                            min="0" step="0.01" style="border-radius: 0 8px 8px 0;" required>
+                    </div>
+                    <div class="valid-feedback">
+                        Looks good!
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label-custom" for="description">Description</label>
+                    <textarea class="form-control form-control-custom" type="text" id="description" name="campground[description]"
+                        rows="4" required><%= campground.description%></textarea>
+                    <div class="valid-feedback">
+                        Looks good!
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label-custom" for="image">Add More Images</label>
+                    <input class="form-control form-control-custom" type="file" id="image" name="image" multiple>
+                </div>
+
+                <% if (campground.images.length > 0) { %>
+                <div class="mb-4 p-3 rounded" style="background-color: #f3f6f3; border: 1px solid rgba(26, 67, 50, 0.08);">
+                    <label class="form-label-custom mb-3 d-block"><i class="fa-solid fa-images me-1"></i> Select Images to Delete</label>
+                    <div class="row row-cols-2 row-cols-md-4 g-3">
+                        <% campground.images.forEach(function(img, i) {  %>
+                        <div class="col text-center">
+                            <div class="position-relative overflow-hidden rounded border border-light shadow-sm mb-2" style="height: 100px;">
+                                <img src="<%=img.thumbnail %>" class="w-100 h-100 object-fit-cover" alt="">
+                            </div>
+                            <div class="form-check justify-content-center">
+                                <input class="form-check-input" type="checkbox" id="image-<%=i%>" name="deleteImages[]" value="<%=img.filename%>">
+                                <label class="form-check-label text-danger fw-bold" for="image-<%=i%>">
+                                    Delete?
+                                </label>
+                            </div>
+                        </div>
+                        <% })%>
+                    </div>
+                </div>
+                <% } %>
+
+                <div class="d-grid gap-2 mb-3">
+                    <button class="btn-primary-custom py-2.5 fs-5 w-100"><i class="fa-solid fa-floppy-disk me-1"></i> Update Campground</button>
+                </div>
+            </form>
+            <div class="text-center mt-3">
+                <a href="/campgrounds/<%= campground._id %>" class="text-success text-decoration-none fw-bold"><i class="fa-solid fa-arrow-left me-1"></i> Cancel &amp; Go Back</a>
+            </div>
+        </div>
+    </div>
+</div>
