@@ -19,7 +19,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'YelpCamp | Discover & Share Wild Campgrounds',
+  title: 'YelpCamp',
   description: 'Explore the best local campgrounds, read verified reviews, share your outdoor experiences, and plan your next forest adventure.',
 };
 

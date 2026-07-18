@@ -35,88 +35,22 @@ async function seedDB() {
   console.log('Admin user created successfully.');
 
   // 3. Seed campgrounds
-  console.log('Seeding campgrounds...');
-  const defaultImages = [
-    {
-      url: 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=1200&q=80',
-      filename: 'YelpCamp/forest_camping_1',
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1478131143081-80f7f84ca84d?auto=format&fit=crop&w=1200&q=80',
-      filename: 'YelpCamp/forest_camping_2',
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1487730116645-74489c95b41b?auto=format&fit=crop&w=1200&q=80',
-      filename: 'YelpCamp/forest_camping_3',
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1523987355523-c7b5b0dd90a7?auto=format&fit=crop&w=1200&q=80',
-      filename: 'YelpCamp/forest_camping_4',
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1510312305653-8ed496efae75?auto=format&fit=crop&w=1200&q=80',
-      filename: 'YelpCamp/forest_camping_5',
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1496080174650-637e3f22fa03?auto=format&fit=crop&w=1200&q=80',
-      filename: 'YelpCamp/forest_camping_6',
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1537905569824-f89f14cceb68?auto=format&fit=crop&w=1200&q=80',
-      filename: 'YelpCamp/forest_camping_7',
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1515408320194-59643816c5b2?auto=format&fit=crop&w=1200&q=80',
-      filename: 'YelpCamp/forest_camping_8',
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1508873535684-277a3cbcc4e8?auto=format&fit=crop&w=1200&q=80',
-      filename: 'YelpCamp/forest_camping_9',
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1526495124232-a02e18494d17?auto=format&fit=crop&w=1200&q=80',
-      filename: 'YelpCamp/forest_camping_10',
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1501555088652-021faa106b9b?auto=format&fit=crop&w=1200&q=80',
-      filename: 'YelpCamp/forest_camping_11',
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1455763912499-19500c252a14?auto=format&fit=crop&w=1200&q=80',
-      filename: 'YelpCamp/forest_camping_12',
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1497906539254-27366679e69d?auto=format&fit=crop&w=1200&q=80',
-      filename: 'YelpCamp/forest_camping_13',
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1533873984035-25970ab07461?auto=format&fit=crop&w=1200&q=80',
-      filename: 'YelpCamp/forest_camping_14',
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1525253086316-d0c936c814f8?auto=format&fit=crop&w=1200&q=80',
-      filename: 'YelpCamp/forest_camping_15',
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1571687949921-1306bfb24b72?auto=format&fit=crop&w=1200&q=80',
-      filename: 'YelpCamp/forest_camping_16',
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1503262628020-2aa49ecf8ded?auto=format&fit=crop&w=1200&q=80',
-      filename: 'YelpCamp/forest_camping_17',
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1532339142463-fd0a8979791a?auto=format&fit=crop&w=1200&q=80',
-      filename: 'YelpCamp/forest_camping_18',
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1470240731273-7821a6eeb6bd?auto=format&fit=crop&w=1200&q=80',
-      filename: 'YelpCamp/forest_camping_19',
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1486915309851-b0cc1f8a0084?auto=format&fit=crop&w=1200&q=80',
-      filename: 'YelpCamp/forest_camping_20',
-    },
+  const defaultImages = Array.from({ length: 17 }, (_, i) => ({
+    url: `/seeds/camp_${i + 1}.jpg`,
+    filename: `YelpCamp/local_camp_${i + 1}`,
+  }));
+
+  const campDescriptions = [
+    "Nestled deep in the pine forest, this campground offers absolute solitude, quiet starry nights, and access to pristine hiking trails.",
+    "A perfect spot for families and kayak enthusiasts. Located right beside a crystal-clear lake with sandy beach shores and kayak rentals.",
+    "An elevation camper's dream! Wake up to stunning panoramic mountain vistas, fresh alpine air, and rugged backcountry paths.",
+    "Enjoy peaceful camping beneath towering redwood trees, with the relaxing sound of a gentle creek flowing right beside your tent pitch.",
+    "A desert oasis camper site. Experience magical sunsets over the canyons, unique rock formations, and clear skies perfect for stargazing.",
+    "Secluded forest camping with spacious gravel sites, fire rings, picnic tables, and clean restroom amenities. Pet friendly!",
+    "Wake up to the sounds of ocean waves crashing. Coastal campsites on grassy cliffs overlooking the Pacific with spectacular sunset views.",
+    "A quiet grassy meadow surrounded by birch trees. Ideal for bird watching, wildflowers, and relaxing around a warm campfire.",
+    "Beautiful camping spot situated along a roaring river. Perfect for fly fishing, swimming in natural pools, and white water rafting.",
+    "A remote wilderness camp accessible only by 4x4 or hiking. Perfect for pure backcountry campers looking to escape the crowds."
   ];
 
   for (let i = 0; i < 50; i++) {
@@ -124,8 +58,7 @@ async function seedDB() {
     const cityData = cities[random1000];
     const price = Math.floor(Math.random() * 20) + 10;
     const title = `${sample(descriptors)} ${sample(places)}`;
-    const description =
-      'Lorem ipsum dolor sit amet consectetur adipisicing elit. Quibusdam dolores vero recusandae quos ducimus, ad, architecto possimus eum, laboriosam magnam voluptatum rem? Ipsum ea iure aliquid accusamus mollitia molestias facere.';
+    const description = sample(campDescriptions);
 
     // Pick 2 random images
     const img1 = sample(defaultImages);
