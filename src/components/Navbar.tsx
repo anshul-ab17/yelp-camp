@@ -43,6 +43,18 @@ export default async function Navbar() {
             >
               Campgrounds
             </Link>
+            <Link
+              href="/about"
+              className="text-foreground/75 hover:text-primary-emerald transition-colors duration-200"
+            >
+              About
+            </Link>
+            <Link
+              href="/faq"
+              className="text-foreground/75 hover:text-primary-emerald transition-colors duration-200"
+            >
+              FAQ
+            </Link>
             {user && (
               <Link
                 href="/campgrounds/new"

@@ -21,7 +21,7 @@ export default function CampgroundMap({ coordinates, title, location }: Campgrou
     if (!mapContainerRef.current) return;
     if (!coordinates || coordinates.length !== 2) return;
 
-    const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || 'pk.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1IjoibW9jayJ9.mock';
+    const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || 'pk.placeholder';
     mapboxgl.accessToken = token;
 
     try {

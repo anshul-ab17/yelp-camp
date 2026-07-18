@@ -15,6 +15,12 @@ export default function Footer() {
             <Link href="/campgrounds" className="hover:text-primary-emerald transition-colors">
               Campgrounds
             </Link>
+            <Link href="/about" className="hover:text-primary-emerald transition-colors">
+              About
+            </Link>
+            <Link href="/faq" className="hover:text-primary-emerald transition-colors">
+              FAQ
+            </Link>
             <a href="https://github.com/anshul-ab17/yelp-camp" target="_blank" rel="noreferrer" className="hover:text-primary-emerald transition-colors">
               GitHub
             </a>

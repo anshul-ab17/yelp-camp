@@ -1,7 +1,7 @@
 // @ts-ignore
 import mbxGeocoding from '@mapbox/mapbox-sdk/services/geocoding';
 
-const mapBoxToken = process.env.MAPBOX_TOKEN || 'pk.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1IjoibW9jayJ9.mock';
+const mapBoxToken = process.env.MAPBOX_TOKEN || 'pk.placeholder';
 const geocoder = mbxGeocoding({ accessToken: mapBoxToken });
 
 export async function geocodeLocation(location: string): Promise<[number, number]> {

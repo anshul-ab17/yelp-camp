@@ -100,7 +100,7 @@ export default async function CampgroundsIndex({ searchParams }: PageProps) {
             {campgrounds.map((campground) => (
               <div
                 key={campground._id}
-                className="group flex flex-col rounded-3xl glass-panel overflow-hidden border border-emerald-500/10 shadow-lg hover:shadow-xl hover:border-emerald-500/20 hover:-translate-y-1 transition-all duration-300 relative"
+                className="group flex flex-col rounded-3xl glass-panel overflow-hidden border border-emerald-500/10 shadow-lg hover:shadow-2xl hover:shadow-emerald-600/10 hover:border-emerald-500/30 hover:-translate-y-2 hover:scale-[1.01] transition-all duration-300 ease-out relative"
               >
                 {/* Image */}
                 <div className="relative h-56 w-full overflow-hidden bg-emerald-950/10">

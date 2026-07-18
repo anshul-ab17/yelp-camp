@@ -29,7 +29,7 @@ export default function ClusterMap({ campgrounds }: ClusterMapProps) {
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
-    const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || 'pk.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1IjoibW9jayJ9.mock';
+    const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || 'pk.placeholder';
     mapboxgl.accessToken = token;
 
     try {
