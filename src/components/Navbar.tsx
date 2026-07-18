@@ -32,7 +32,7 @@ export default async function Navbar() {
           {/* Navigation Links */}
           <nav className="hidden md:flex space-x-8 text-sm font-medium">
             <Link
-              href="/"
+              href="/#home"
               className="text-foreground/75 hover:text-primary-emerald transition-colors duration-200"
             >
               Home
@@ -44,13 +44,13 @@ export default async function Navbar() {
               Campgrounds
             </Link>
             <Link
-              href="/about"
+              href="/#about"
               className="text-foreground/75 hover:text-primary-emerald transition-colors duration-200"
             >
               About
             </Link>
             <Link
-              href="/faq"
+              href="/#faq"
               className="text-foreground/75 hover:text-primary-emerald transition-colors duration-200"
             >
               FAQ
