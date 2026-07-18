@@ -1,32 +1,29 @@
-// @ts-ignore
-import mbxGeocoding from '@mapbox/mapbox-sdk/services/geocoding';
-
-const mapBoxToken = process.env.MAPBOX_TOKEN || 'pk.placeholder';
-const geocoder = mbxGeocoding({ accessToken: mapBoxToken });
-
+/**
+ * Open-source geocoding service using OpenStreetMap Nominatim API (no tokens needed!).
+ */
 export async function geocodeLocation(location: string): Promise<[number, number]> {
   try {
-    const response = await geocoder
-      .forwardGeocode({
-        query: location,
-        limit: 1,
-      })
-      .send();
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(location)}&format=json&limit=1`;
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'YelpCampNextjsApp/1.0 (campsites directory geocoding helper)',
+      },
+    });
 
-    if (
-      response &&
-      response.body &&
-      response.body.features &&
-      response.body.features.length > 0
-    ) {
-      return response.body.features[0].geometry.coordinates as [number, number];
+    const data = await response.json();
+
+    if (data && data.length > 0) {
+      const lon = parseFloat(data[0].lon);
+      const lat = parseFloat(data[0].lat);
+      if (!isNaN(lon) && !isNaN(lat)) {
+        return [lon, lat];
+      }
     }
   } catch (error) {
-    console.error('Geocoding error, using fallback:', error);
+    console.error('Nominatim open geocoding error, using fallback:', error);
   }
 
-  // Fallback: Generate a random coordinate around the US/Europe area
-  // or return a standard default point
+  // Fallback: Generate a random coordinate around the US area
   const lat = 34 + Math.random() * 12; // 34 to 46
   const lng = -118 + Math.random() * 40; // -118 to -78
   return [lng, lat];

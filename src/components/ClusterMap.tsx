@@ -2,15 +2,12 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-// @ts-ignore
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
-import { MapPin, Info } from 'lucide-react';
 
 interface MapCampground {
   _id: string;
   title: string;
   location: string;
+  price: number;
   geometry: {
     type: 'Point';
     coordinates: [number, number];
@@ -23,111 +20,110 @@ interface ClusterMapProps {
 
 export default function ClusterMap({ campgrounds }: ClusterMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<any>(null);
-  const [mapError, setMapError] = useState<string>('');
+  const mapInstanceRef = useRef<any>(null);
+  const markersGroupRef = useRef<any>(null);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    if (!mapContainerRef.current) return;
+    setIsClient(true);
+  }, []);
 
-    const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || 'pk.placeholder';
-    mapboxgl.accessToken = token;
+  useEffect(() => {
+    if (!isClient || !mapContainerRef.current) return;
 
-    try {
-      // Find center coordinate based on campgrounds
-      let center: [number, number] = [-98.5795, 39.8283]; // USA Center default
-      if (campgrounds.length > 0) {
-        // Average coordinates for center
-        const totalCoords = campgrounds.reduce(
-          (acc, camp) => {
-            if (camp.geometry?.coordinates?.length === 2) {
-              acc[0] += camp.geometry.coordinates[0];
-              acc[1] += camp.geometry.coordinates[1];
-              acc[2]++;
-            }
-            return acc;
-          },
-          [0, 0, 0]
-        );
-        if (totalCoords[2] > 0) {
-          center = [totalCoords[0] / totalCoords[2], totalCoords[1] / totalCoords[2]];
-        }
-      }
+    // Dynamically import Leaflet on client-side
+    import('leaflet').then((L) => {
+      import('leaflet/dist/leaflet.css');
 
-      const map = new mapboxgl.Map({
-        container: mapContainerRef.current,
-        style: 'mapbox://styles/mapbox/outdoors-v12', // Beautiful outdoors style
-        center: center,
-        zoom: campgrounds.length > 1 ? 3 : 5,
-        cooperativeGestures: true, // Pinch/zoom easily on touch devices
-      });
-
-      map.addControl(new mapboxgl.NavigationControl(), 'top-right');
-      mapRef.current = map;
-
-      // Wait for map to load to add markers
-      map.on('load', () => {
-        campgrounds.forEach((campground) => {
-          if (!campground.geometry || !campground.geometry.coordinates) return;
-
-          const [lng, lat] = campground.geometry.coordinates;
-
-          // Create a custom element for the marker
-          const el = document.createElement('div');
-          el.className = 'custom-marker';
-          el.style.backgroundColor = '#0b6638';
-          el.style.width = '14px';
-          el.style.height = '14px';
-          el.style.borderRadius = '50%';
-          el.style.border = '2px solid #ffffff';
-          el.style.boxShadow = '0 0 10px rgba(0,0,0,0.3)';
-          el.style.cursor = 'pointer';
-
-          // Popup HTML content
-          const popupContent = `
-            <div class="p-1">
-              <h4 class="font-bold text-sm text-emerald-800 dark:text-emerald-400 mb-1 font-display">${campground.title}</h4>
-              <p class="text-xs text-foreground/70 mb-2 flex items-center"><span class="mr-1">📍</span>${campground.location}</p>
-              <a href="/campgrounds/${campground._id}" class="inline-flex items-center text-xs font-semibold text-primary-emerald hover:underline">
-                View Details <span class="ml-1">→</span>
-              </a>
-            </div>
-          `;
-
-          const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(popupContent);
-
-          new mapboxgl.Marker(el)
-            .setLngLat([lng, lat])
-            .setPopup(popup)
-            .addTo(map);
+      if (!mapInstanceRef.current) {
+        // Setup map centered on USA
+        const map = L.map(mapContainerRef.current, {
+          center: [39.8283, -98.5795],
+          zoom: 4,
+          scrollWheelZoom: true,
         });
-      });
-    } catch (error: any) {
-      console.error('Failed to initialize Mapbox Map:', error);
-      setMapError(error.message || 'WebGL not supported or Mapbox failed to initialize.');
-    }
 
-    return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
+        // Add free OpenStreetMap tile layer (zero tokens needed!)
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+          subdomains: 'abcd',
+          maxZoom: 20
+        }).addTo(map);
+
+        mapInstanceRef.current = map;
+        markersGroupRef.current = L.featureGroup().addTo(map);
       }
-    };
-  }, [campgrounds]);
 
-  if (mapError) {
-    return (
-      <div className="w-full h-80 rounded-3xl bg-emerald-500/5 border border-emerald-500/10 flex flex-col items-center justify-center p-6 text-center">
-        <Info className="h-8 w-8 text-primary-emerald mb-2" />
-        <h4 className="font-bold mb-1">Interactive Map Offline</h4>
-        <p className="text-xs text-foreground/50 max-w-sm">
-          Mapbox cluster map could not load. This might be due to WebGL limitations or missing configuration.
-        </p>
-      </div>
-    );
-  }
+      const map = mapInstanceRef.current;
+      const markersGroup = markersGroupRef.current;
+
+      // Clear existing markers
+      markersGroup.clearLayers();
+
+      if (campgrounds.length === 0) return;
+
+      const bounds: any[] = [];
+
+      campgrounds.forEach((camp) => {
+        const [lng, lat] = camp.geometry.coordinates;
+        if (isNaN(lat) || isNaN(lng)) return;
+
+        // Custom divIcon styled with Tailwind
+        const customIcon = L.divIcon({
+          className: 'custom-leaflet-marker',
+          html: `<div class="relative flex items-center justify-center">
+            <div class="absolute h-5 w-5 rounded-full bg-emerald-500 animate-ping opacity-60"></div>
+            <div class="h-4.5 w-4.5 rounded-full bg-primary-emerald border-2 border-white shadow-md"></div>
+          </div>`,
+          iconSize: [20, 20],
+          iconAnchor: [10, 10],
+        });
+
+        const popupContent = `
+          <div style="font-family: sans-serif; min-width: 140px; padding: 2px;">
+            <h4 style="margin: 0 0 4px 0; font-weight: 700; color: #0b6638; font-size: 13px;">${camp.title}</h4>
+            <p style="margin: 0 0 6px 0; color: #666; font-size: 11px; display: flex; align-items: center;">📍 ${camp.location}</p>
+            <div style="display: flex; align-items: center; justify-between; border-top: 1px solid #eee; padding-top: 6px; margin-top: 4px;">
+              <span style="font-weight: 700; color: #333; font-size: 11px;">$${camp.price}/night</span>
+              <a href="/campgrounds/${camp._id}" style="color: #0b6638; font-weight: 600; text-decoration: none; font-size: 11px; margin-left: auto;">Details &rarr;</a>
+            </div>
+          </div>
+        `;
+
+        const marker = L.marker([lat, lng], { icon: customIcon })
+          .bindPopup(popupContent)
+          .addTo(markersGroup);
+
+        bounds.push([lat, lng]);
+      });
+
+      // Fit map to markers bounds
+      if (bounds.length > 0) {
+        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 10 });
+      }
+    });
+  }, [isClient, campgrounds]);
 
   return (
-    <div className="w-full relative h-[400px] rounded-3xl overflow-hidden border border-emerald-500/10 shadow-lg shadow-emerald-500/5">
-      <div ref={mapContainerRef} className="w-full h-full" />
+    <div className="w-full h-full relative">
+      <div ref={mapContainerRef} className="w-full h-full z-10" />
+      {/* Styles for Leaflet popups */}
+      <style jsx global>{`
+        .leaflet-popup-content-wrapper {
+          border-radius: 16px !important;
+          border: 1px solid rgba(11, 102, 56, 0.15);
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+          padding: 4px !important;
+        }
+        .leaflet-popup-tip-container {
+          display: none !important;
+        }
+        .leaflet-popup-close-button {
+          top: 6px !important;
+          right: 6px !important;
+          color: #999 !important;
+        }
+      `}</style>
     </div>
   );
 }

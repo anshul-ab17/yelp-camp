@@ -1,9 +1,6 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { connectToDatabase } from '@/lib/mongodb';
-import Campground from '@/models/Campground';
-import Review from '@/models/Review';
-import User from '@/models/User';
+import Link from 'next/link';
+import db from '@/lib/db';
 import CampgroundMap from '@/components/CampgroundMap';
 import ReviewForm from '@/components/ReviewForm';
 import DeleteCampgroundButton from '@/components/DeleteCampgroundButton';
@@ -18,53 +15,53 @@ interface PageProps {
 export default async function CampgroundDetail({ params }: PageProps) {
   const { id } = await params;
 
-  await connectToDatabase();
-
-  // Fetch campground with deep population
-  const campDoc = await Campground.findById(id)
-    .populate('author')
-    .populate({
-      path: 'reviews',
-      populate: {
-        path: 'author',
-      },
-    });
-
-  if (!campDoc) {
+  // Fetch campground from SQLite
+  const campRow = db.prepare('SELECT * FROM campgrounds WHERE id = ?').get(id) as any;
+  if (!campRow) {
     notFound();
   }
 
+  // Fetch campground author
+  const authorRow = db.prepare('SELECT id, username FROM users WHERE id = ?').get(campRow.author_id) as any;
+  const author = authorRow ? { _id: authorRow.id, username: authorRow.username } : { _id: '', username: 'Unknown User' };
+
+  // Fetch reviews linked to this campground, joining with review authors
+  const reviewRows = db.prepare(`
+    SELECT r.*, u.username as author_username 
+    FROM reviews r 
+    JOIN users u ON r.author_id = u.id 
+    WHERE r.campground_id = ?
+    ORDER BY r.created_at DESC
+  `).all(id) as any[];
+
   // Get current logged-in user
   const currentUser = await getCurrentUser();
-  const currentUserId = currentUser?._id?.toString() || '';
+  const currentUserId = currentUser?._id || '';
 
-  // Serialize to plain JSON object
+  // Parse images JSON array
+  const images = JSON.parse(campRow.images_json || '[]');
+
+  // Map to structured campground object
   const campground = {
-    _id: campDoc._id.toString(),
-    title: campDoc.title,
-    location: campDoc.location,
-    price: campDoc.price,
-    description: campDoc.description,
+    _id: campRow.id,
+    title: campRow.title,
+    location: campRow.location,
+    price: campRow.price,
+    description: campRow.description,
     geometry: {
-      type: campDoc.geometry.type,
-      coordinates: [campDoc.geometry.coordinates[0], campDoc.geometry.coordinates[1]] as [number, number],
+      type: 'Point',
+      coordinates: [campRow.geometry_lng, campRow.geometry_lat] as [number, number],
     },
-    images: campDoc.images.map((img: any) => ({
-      url: img.url,
-      filename: img.filename,
-    })),
-    author: {
-      _id: (campDoc.author as any)._id.toString(),
-      username: (campDoc.author as any).username,
-    },
-    reviews: campDoc.reviews.map((rev: any) => ({
-      _id: rev._id.toString(),
-      body: rev.body,
-      rating: rev.rating,
-      createdAt: rev.createdAt.toISOString(),
+    images,
+    author,
+    reviews: reviewRows.map((row) => ({
+      _id: row.id,
+      body: row.body,
+      rating: row.rating,
+      createdAt: row.created_at,
       author: {
-        _id: rev.author._id.toString(),
-        username: rev.author.username,
+        _id: row.author_id,
+        username: row.author_username,
       },
     })),
   };
@@ -75,10 +72,9 @@ export default async function CampgroundDetail({ params }: PageProps) {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
         
-        {/* Main Details (Col Span 2) */}
+        {/* Main Details */}
         <div className="lg:col-span-2 space-y-8">
           <div className="space-y-4">
-            {/* Title & Location Header */}
             <div>
               <h1 className="text-3xl font-extrabold font-display tracking-tight text-foreground">
                 {campground.title}
@@ -89,10 +85,9 @@ export default async function CampgroundDetail({ params }: PageProps) {
               </p>
             </div>
 
-            {/* Images Grid/Single */}
             <div className="rounded-3xl overflow-hidden glass-panel border border-emerald-500/10 shadow-lg relative h-[400px] w-full bg-emerald-950/10">
               <img
-                src={campground.images[0]?.url || 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=1200&q=80'}
+                src={campground.images[0]?.url || '/seeds/camp_1.jpg'}
                 alt={campground.title}
                 className="object-cover w-full h-full"
               />
@@ -104,7 +99,7 @@ export default async function CampgroundDetail({ params }: PageProps) {
 
           {/* Description & Author box */}
           <div className="p-6 sm:p-8 rounded-3xl glass-panel border border-emerald-500/10 shadow-md space-y-6">
-            <div className="flex flex-wrap items-center justify-between gap-4 pb-5 border-b border-emerald-950/5 dark:border-emerald-100/5">
+            <div className="flex flex-wrap items-center justify-between gap-4 pb-5 border-b border-emerald-950/5">
               <div className="flex items-center space-x-2.5">
                 <div className="p-2 rounded-xl bg-emerald-500/10 text-primary-emerald">
                   <UserIcon className="h-5 w-5" />
@@ -115,7 +110,6 @@ export default async function CampgroundDetail({ params }: PageProps) {
                 </div>
               </div>
 
-              {/* Price Details */}
               <div className="flex items-center space-x-2.5">
                 <div className="p-2 rounded-xl bg-emerald-500/10 text-primary-emerald">
                   <DollarSign className="h-5 w-5" />
@@ -136,7 +130,7 @@ export default async function CampgroundDetail({ params }: PageProps) {
 
             {/* Author Controls */}
             {isAuthor && (
-              <div className="pt-6 border-t border-emerald-950/5 dark:border-emerald-100/5 flex flex-wrap gap-4">
+              <div className="pt-6 border-t border-emerald-950/5 flex flex-wrap gap-4">
                 <Link
                   href={`/campgrounds/${campground._id}/edit`}
                   className="flex items-center space-x-1.5 px-4 py-2.5 rounded-xl bg-emerald-500/10 text-primary-emerald hover:bg-emerald-500/20 text-sm font-semibold transition-all cursor-pointer"
@@ -167,14 +161,13 @@ export default async function CampgroundDetail({ params }: PageProps) {
                     className="p-5 rounded-2xl glass-panel border border-emerald-500/10 shadow-sm flex flex-col md:flex-row md:items-start justify-between gap-4"
                   >
                     <div className="space-y-3">
-                      {/* Rating stars & author */}
                       <div className="flex flex-wrap items-center gap-3">
                         <div className="flex items-center space-x-0.5">
                           {[1, 2, 3, 4, 5].map((star) => (
                             <Star
                               key={star}
                               className={`h-4.5 w-4.5 ${
-                                star <= review.rating ? 'fill-amber-400 text-amber-400' : 'text-foreground/15 dark:text-foreground/10'
+                                star <= review.rating ? 'fill-amber-400 text-amber-400' : 'text-foreground/15'
                               }`}
                             />
                           ))}
@@ -188,13 +181,11 @@ export default async function CampgroundDetail({ params }: PageProps) {
                         </span>
                       </div>
 
-                      {/* Review text */}
                       <p className="text-sm text-foreground/75 leading-relaxed">
                         {review.body}
                       </p>
                     </div>
 
-                    {/* Delete button (review author check) */}
                     {review.author._id === currentUserId && (
                       <DeleteReviewButton campgroundId={campground._id} reviewId={review._id} />
                     )}
@@ -205,9 +196,8 @@ export default async function CampgroundDetail({ params }: PageProps) {
           </div>
         </div>
 
-        {/* Sidebar (Map & Form) (Col Span 1) */}
+        {/* Sidebar (Map & Form) */}
         <div className="space-y-8 lg:sticky lg:top-24 h-fit">
-          {/* Mapbox Map */}
           <div className="space-y-3">
             <h3 className="text-sm font-semibold text-foreground/80">Campground Location</h3>
             <CampgroundMap
@@ -217,7 +207,6 @@ export default async function CampgroundDetail({ params }: PageProps) {
             />
           </div>
 
-          {/* Review Form */}
           {currentUser ? (
             <ReviewForm campgroundId={campground._id} />
           ) : (

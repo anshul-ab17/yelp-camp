@@ -1,7 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
-import { connectToDatabase } from './mongodb';
-import User, { IUser } from '@/models/User';
+import db from './db';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkeyforlocaldevelopmentonly';
 
@@ -39,7 +38,7 @@ export async function clearJWTCookie() {
   cookieStore.delete('token');
 }
 
-export async function getCurrentUser(): Promise<IUser | null> {
+export async function getCurrentUser(): Promise<{ _id: string; username: string; email: string } | null> {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
@@ -48,9 +47,14 @@ export async function getCurrentUser(): Promise<IUser | null> {
     const decoded = verifyJWT(token);
     if (!decoded || !decoded.userId) return null;
 
-    await connectToDatabase();
-    const user = await User.findById(decoded.userId);
-    return user;
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(decoded.userId) as any;
+    if (!user) return null;
+
+    return {
+      _id: user.id,
+      username: user.username,
+      email: user.email,
+    };
   } catch (error) {
     return null;
   }

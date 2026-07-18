@@ -1,8 +1,8 @@
 'use server';
 
 import bcrypt from 'bcryptjs';
-import { connectToDatabase } from '@/lib/mongodb';
-import User from '@/models/User';
+import crypto from 'crypto';
+import db from '@/lib/db';
 import { signJWT, setJWTCookie, clearJWTCookie } from '@/lib/auth';
 
 export interface AuthResponse {
@@ -20,15 +20,14 @@ export async function registerUser(prevState: any, formData: FormData): Promise<
       return { success: false, error: 'All fields are required' };
     }
 
-    await connectToDatabase();
-
-    // Check if user already exists
-    const existingEmail = await User.findOne({ email });
+    // Check if email already registered
+    const existingEmail = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
     if (existingEmail) {
       return { success: false, error: 'Email is already registered' };
     }
 
-    const existingUsername = await User.findOne({ username });
+    // Check if username taken
+    const existingUsername = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
     if (existingUsername) {
       return { success: false, error: 'Username is already taken' };
     }
@@ -37,19 +36,20 @@ export async function registerUser(prevState: any, formData: FormData): Promise<
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
-    // Create user
-    const user = new User({
+    // Create user with random UUID
+    const userId = crypto.randomUUID();
+    db.prepare('INSERT INTO users (id, email, username, password_hash) VALUES (?, ?, ?, ?)').run(
+      userId,
       email,
       username,
-      passwordHash,
-    });
-    await user.save();
+      passwordHash
+    );
 
     // Sign JWT and set cookie
     const token = signJWT({
-      userId: user._id.toString() as string,
-      username: user.username,
-      email: user.email,
+      userId,
+      username,
+      email,
     });
     await setJWTCookie(token);
 
@@ -69,23 +69,21 @@ export async function loginUser(prevState: any, formData: FormData): Promise<Aut
       return { success: false, error: 'Username and password are required' };
     }
 
-    await connectToDatabase();
-
     // Find user
-    const user = await User.findOne({ username });
+    const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username) as any;
     if (!user) {
       return { success: false, error: 'Invalid username or password' };
     }
 
     // Check password
-    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
       return { success: false, error: 'Invalid username or password' };
     }
 
     // Sign JWT and set cookie
     const token = signJWT({
-      userId: user._id.toString() as string,
+      userId: user.id,
       username: user.username,
       email: user.email,
     });

@@ -1,9 +1,8 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { connectToDatabase } from '@/lib/mongodb';
-import Campground from '@/models/Campground';
-import Review from '@/models/Review';
+import crypto from 'crypto';
+import db from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
 
 export interface ReviewResponse {
@@ -25,25 +24,21 @@ export async function createReview(campgroundId: string, prevState: any, formDat
       return { success: false, error: 'Rating and review text are required' };
     }
 
-    await connectToDatabase();
-
-    const campground = await Campground.findById(campgroundId);
+    // Verify campground exists
+    const campground = db.prepare('SELECT id FROM campgrounds WHERE id = ?').get(campgroundId);
     if (!campground) {
       return { success: false, error: 'Campground not found' };
     }
 
-    // Create review
-    const review = new Review({
+    // Insert review into SQLite
+    const reviewId = crypto.randomUUID();
+    db.prepare('INSERT INTO reviews (id, body, rating, author_id, campground_id) VALUES (?, ?, ?, ?, ?)').run(
+      reviewId,
       body,
       rating,
-      author: user._id,
-    });
-
-    await review.save();
-
-    // Link review to campground
-    campground.reviews.push(review._id as any);
-    await campground.save();
+      user._id,
+      campgroundId
+    );
 
     revalidatePath(`/campgrounds/${campgroundId}`);
 
@@ -61,25 +56,19 @@ export async function deleteReview(campgroundId: string, reviewId: string): Prom
       return { success: false, error: 'You must be logged in to delete a review' };
     }
 
-    await connectToDatabase();
-
-    const review = await Review.findById(reviewId);
+    // Find review
+    const review = db.prepare('SELECT * FROM reviews WHERE id = ?').get(reviewId) as any;
     if (!review) {
       return { success: false, error: 'Review not found' };
     }
 
     // Authorization check: Only the author of the review can delete it
-    if (review.author.toString() !== user._id.toString()) {
+    if (review.author_id !== user._id) {
       return { success: false, error: 'You do not have permission to delete this review' };
     }
 
-    // Pull from campground reviews array
-    await Campground.findByIdAndUpdate(campgroundId, {
-      $pull: { reviews: reviewId },
-    });
-
-    // Delete review document
-    await Review.findByIdAndDelete(reviewId);
+    // Delete review document from SQLite
+    db.prepare('DELETE FROM reviews WHERE id = ?').run(reviewId);
 
     revalidatePath(`/campgrounds/${campgroundId}`);
 

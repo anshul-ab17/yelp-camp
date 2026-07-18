@@ -1,56 +1,56 @@
 import { notFound, redirect } from 'next/navigation';
-import Link from 'next/link';
-import { connectToDatabase } from '@/lib/mongodb';
-import Campground from '@/models/Campground';
+import db from '@/lib/db';
 import EditCampgroundForm from '@/components/EditCampgroundForm';
 import { getCurrentUser } from '@/lib/auth';
-import { ArrowLeft } from 'lucide-react';
 
 interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-export default async function EditCampground({ params }: PageProps) {
+export default async function EditCampgroundPage({ params }: PageProps) {
   const { id } = await params;
 
-  await connectToDatabase();
-  const campDoc = await Campground.findById(id);
+  // Verify user is logged in
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    redirect(`/login?redirectTo=/campgrounds/${id}/edit`);
+  }
 
-  if (!campDoc) {
+  // Fetch campground from SQLite
+  const campRow = db.prepare('SELECT * FROM campgrounds WHERE id = ?').get(id) as any;
+  if (!campRow) {
     notFound();
   }
 
-  // Auth validation
-  const user = await getCurrentUser();
-  if (!user || campDoc.author.toString() !== user._id.toString()) {
+  // Authorization check
+  if (campRow.author_id !== currentUser._id) {
     redirect(`/campgrounds/${id}`);
   }
 
-  // Serialize to plain JSON
+  // Map to campground object
   const campground = {
-    _id: campDoc._id.toString(),
-    title: campDoc.title,
-    location: campDoc.location,
-    price: campDoc.price,
-    description: campDoc.description,
-    images: campDoc.images.map((img: any) => ({
-      url: img.url,
-      filename: img.filename,
-    })),
+    _id: campRow.id,
+    title: campRow.title,
+    location: campRow.location,
+    price: campRow.price,
+    description: campRow.description,
+    images: JSON.parse(campRow.images_json || '[]'),
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-12 relative w-full">
-      {/* Back button */}
-      <Link
-        href={`/campgrounds/${campground._id}`}
-        className="inline-flex items-center space-x-1.5 text-sm font-medium text-foreground/60 hover:text-primary-emerald transition-colors mb-8"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        <span>Back to Campground</span>
-      </Link>
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div className="p-6 sm:p-10 rounded-3xl glass-panel border border-emerald-500/10 shadow-xl bg-white/80 space-y-6">
+        <div>
+          <h1 className="text-2xl font-extrabold font-display tracking-tight text-foreground">
+            Edit Campground
+          </h1>
+          <p className="text-sm text-foreground/50 mt-1">
+            Update campground features, location, price, or upload more outdoor photos.
+          </p>
+        </div>
 
-      <EditCampgroundForm campground={campground} />
+        <EditCampgroundForm campground={campground} />
+      </div>
     </div>
   );
 }

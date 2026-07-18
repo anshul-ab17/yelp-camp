@@ -12,8 +12,10 @@
   "dependencies": {
     "@mapbox/mapbox-sdk": "^0.16.2",
     "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^12.11.1",
     "cloudinary": "^2.10.0",
     "jsonwebtoken": "^9.0.3",
+    "leaflet": "^1.9.4",
     "lucide-react": "^1.25.0",
     "mongoose": "^9.7.4",
     "next": "16.2.10",
@@ -23,7 +25,9 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/bcryptjs": "^3.0.0",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/jsonwebtoken": "^9.0.10",
+    "@types/leaflet": "^1.9.21",
     "@types/mapbox__mapbox-sdk": "^0.16.5",
     "@types/node": "^20",
     "@types/react": "^19",

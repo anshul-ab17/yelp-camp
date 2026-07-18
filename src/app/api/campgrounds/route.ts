@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
-import Campground from '@/models/Campground';
+import db from '@/lib/db';
 
 export async function GET(request: Request) {
   try {
@@ -9,41 +8,36 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get('limit') || '15', 10);
     const offset = parseInt(searchParams.get('offset') || '0', 10);
 
-    await connectToDatabase();
+    let countSql = 'SELECT COUNT(*) as count FROM campgrounds';
+    let selectSql = 'SELECT * FROM campgrounds';
+    const queryParams: any[] = [];
 
-    const filter = search
-      ? {
-          $or: [
-            { title: { $regex: search, $options: 'i' } },
-            { location: { $regex: search, $options: 'i' } },
-          ],
-        }
-      : {};
+    if (search) {
+      const searchPattern = `%${search}%`;
+      countSql += ' WHERE title LIKE ? OR location LIKE ?';
+      selectSql += ' WHERE title LIKE ? OR location LIKE ?';
+      queryParams.push(searchPattern, searchPattern);
+    }
 
-    const total = await Campground.countDocuments(filter);
-    const rawCampgrounds = await Campground.find(filter)
-      .sort({ createdAt: -1 })
-      .skip(offset)
-      .limit(limit);
+    selectSql += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
 
-    const campgrounds = rawCampgrounds.map((doc) => {
-      const camp = doc.toObject({ virtuals: true });
-      return {
-        _id: camp._id.toString(),
-        title: camp.title,
-        location: camp.location,
-        price: camp.price,
-        description: camp.description,
-        images: camp.images.map((img: any) => ({
-          url: img.url,
-          filename: img.filename,
-        })),
-        geometry: {
-          type: camp.geometry.type,
-          coordinates: [camp.geometry.coordinates[0], camp.geometry.coordinates[1]] as [number, number],
-        },
-      };
-    });
+    const countRow = db.prepare(countSql).get(...queryParams) as { count: number };
+    const total = countRow ? countRow.count : 0;
+
+    const campgroundsRaw = db.prepare(selectSql).all(...queryParams, limit, offset) as any[];
+
+    const campgrounds = campgroundsRaw.map((row) => ({
+      _id: row.id,
+      title: row.title,
+      location: row.location,
+      price: row.price,
+      description: row.description,
+      images: JSON.parse(row.images_json),
+      geometry: {
+        type: 'Point',
+        coordinates: [row.geometry_lng, row.geometry_lat] as [number, number],
+      },
+    }));
 
     const hasMore = offset + campgrounds.length < total;
 
