@@ -1,19 +1,37 @@
-import mongoose, { Schema, Document, PassportLocalDocument, PassportLocalModel } from 'mongoose';
-import passportLocalMongoose from 'passport-local-mongoose';
+import mongoose, { Schema, Document, Model } from 'mongoose';
 
-export interface IUser extends PassportLocalDocument {
-    email: string;
+export interface IUser extends Document {
+  email: string;
+  username: string;
+  passwordHash: string;
+  createdAt: Date;
 }
 
 const UserSchema = new Schema<IUser>({
-    email: {
-        type: String,
-        required: true,
-        unique: true
-    }
+  email: {
+    type: String,
+    required: [true, 'Email is required'],
+    unique: true,
+    trim: true,
+    lowercase: true,
+  },
+  username: {
+    type: String,
+    required: [true, 'Username is required'],
+    unique: true,
+    trim: true,
+  },
+  passwordHash: {
+    type: String,
+    required: true,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
-UserSchema.plugin(passportLocalMongoose);
+// Avoid model recompilation errors on hot reload in Next.js
+const User: Model<IUser> = mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
 
-const User = mongoose.model<IUser, PassportLocalModel<IUser>>('User', UserSchema);
 export default User;

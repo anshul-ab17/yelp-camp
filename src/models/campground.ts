@@ -1,81 +1,98 @@
-import mongoose, { Schema, Document, Types } from 'mongoose';
-import Review from './review';
+import mongoose, { Schema, Document, Model } from 'mongoose';
+import { IReview } from './Review';
+import { IUser } from './User';
 
-interface IImage {
-    url: string;
-    filename: string;
-    thumbnail?: string;
+interface Image {
+  url: string;
+  filename: string;
 }
 
 export interface ICampground extends Document {
-    title: string;
-    images: IImage[];
-    geometry: {
-        type: 'Point';
-        coordinates: number[];
-    };
-    price: number;
-    description: string;
-    location: string;
-    author: Types.ObjectId;
-    reviews: Types.ObjectId[];
+  title: string;
+  images: Image[];
+  geometry: {
+    type: 'Point';
+    coordinates: [number, number]; // [longitude, latitude]
+  };
+  price: number;
+  description: string;
+  location: string;
+  author: mongoose.Types.ObjectId | IUser;
+  reviews: mongoose.Types.ObjectId[] | IReview[];
+  createdAt: Date;
 }
 
-const ImageSchema = new Schema<IImage>({
-    url: String,
-    filename: String
+const ImageSchema = new Schema<Image>({
+  url: String,
+  filename: String,
 });
 
-ImageSchema.virtual('thumbnail').get(function (this: IImage) {
-    return this.url.replace('/upload', '/upload/w_200');
+// Add virtual property to get thumbnail URL (sizes for edit view)
+ImageSchema.virtual('thumbnail').get(function () {
+  return this.url.replace('/upload', '/upload/w_200');
 });
 
-const opts = { toJSON: { virtuals: true } };
-
-const CampgroundSchema = new Schema<ICampground>({
-    title: String,
+const CampgroundSchema = new Schema<ICampground>(
+  {
+    title: {
+      type: String,
+      required: [true, 'Campground title is required'],
+    },
     images: [ImageSchema],
     geometry: {
-        type: {
-            type: String,
-            enum: ['Point'],
-            required: true
-        },
-        coordinates: {
-            type: [Number],
-            required: true
-        }
+      type: {
+        type: String,
+        enum: ['Point'],
+        required: true,
+      },
+      coordinates: {
+        type: [Number],
+        required: true,
+      },
     },
-    price: Number,
-    description: String,
-    location: String,
+    price: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    description: {
+      type: String,
+      required: true,
+    },
+    location: {
+      type: String,
+      required: true,
+    },
     author: {
-        type: Schema.Types.ObjectId,
-        ref: 'User'
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
     },
     reviews: [
-        {
-            type: Schema.Types.ObjectId,
-            ref: 'Review'
-        }
-    ]
-}, opts);
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Review',
+      },
+    ],
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  { toJSON: { virtuals: true }, toObject: { virtuals: true } }
+);
 
-CampgroundSchema.virtual('properties.popUpMarkup').get(function (this: ICampground) {
-    return `
-    <strong><a href="/campgrounds/${this._id}">${this.title}</a><strong>
-    <p>${this.description.substring(0, 20)}...</p>`;
-});
-
+// Middleware to clean up reviews associated with the campground when deleted
 CampgroundSchema.post('findOneAndDelete', async function (doc) {
-    if (doc) {
-        await Review.deleteMany({
-            _id: {
-                $in: doc.reviews
-            }
-        });
-    }
+  if (doc) {
+    await mongoose.model('Review').deleteMany({
+      _id: {
+        $in: doc.reviews,
+      },
+    });
+  }
 });
 
-const Campground = mongoose.model<ICampground>('Campground', CampgroundSchema);
+const Campground: Model<ICampground> = mongoose.models.Campground || mongoose.model<ICampground>('Campground', CampgroundSchema);
+
 export default Campground;
